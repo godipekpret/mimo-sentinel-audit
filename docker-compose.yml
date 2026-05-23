@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  sentinel-audit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mimo-sentinel
+    volumes:
+      - ./contracts:/contracts:ro
+      - ./reports:/app/reports
+      - ./.env:/app/.env:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - OUTPUT_DIR=/app/reports
+    networks:
+      - sentinel-net
+
+  sentinel-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mimo-sentinel-monitor
+    entrypoint: ["python", "-m", "sentinel", "monitor"]
+    command: ["--chain", "ethereum", "--duration", "3600"]
+    volumes:
+      - ./.env:/app/.env:ro
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - sentinel-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: mimo-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - sentinel-net
+
+networks:
+  sentinel-net:
+    driver: bridge
